@@ -19,7 +19,12 @@ DEFAULT_PROMPT_TEXT = "especially the lies"
 
 
 DETECTORS = [
-    classname for (classname, active) in _plugins.enumerate_plugins("detectors")
+    classname
+    for (classname, active) in _plugins.enumerate_plugins("detectors")
+    if classname
+    not in [  # filter detector classes used as templates
+        "detectors.packagehallucination.PackageHallucinationDetector",
+    ]
 ]
 
 BCP_LENIENT_RE = re.compile(r"[a-z]{2}([\-A-Za-z]*)")
@@ -131,10 +136,9 @@ def test_detector_metadata(classname):
         assert bcp47_part == "*" or re.match(
             BCP_LENIENT_RE, bcp47_part
         ), "langs must be described with either * or a bcp47 code"
-    assert isinstance(
-        d.doc_uri, str
-    ), "detectors should give a doc uri describing/citing the attack"
-    if len(d.doc_uri) > 1:
+    assert isinstance(d.doc_uri, str) or d.doc_uri is None
+    if isinstance(d.doc_uri, str):
+        assert len(d.doc_uri) > 1, "string doc_uris must be populated. else use None"
         assert d.doc_uri.lower().startswith(
             "http"
         ), "doc uris should be fully-specified absolute HTTP addresses"
